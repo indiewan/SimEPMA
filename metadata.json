@@ -1,0 +1,6 @@
+{
+  "name": "EPMA Simulation Training System",
+  "description": "A high-fidelity Electronic Prescribing and Medicines Administration (EPMA) clinical simulation platform featuring realistic prescribing, eMAR administration rounds, non-administration coding, CDS conflict checks, instructor case scenario authoring, and student performance debriefing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
