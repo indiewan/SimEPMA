@@ -298,6 +298,7 @@ export interface TraineeActionLog {
     | 'DISCONTINUE_DRUG'
     | 'PHARMACY_SCREEN'
     | 'UPDATE_VITALS'
+    | 'UPDATE_PATIENT'
     | 'WITNESS_SIGN_OFF';
   details: string;
   drugName?: string;

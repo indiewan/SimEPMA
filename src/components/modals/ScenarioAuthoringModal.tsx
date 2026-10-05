@@ -36,6 +36,9 @@ export const ScenarioAuthoringModal: React.FC = () => {
     createCustomScenario,
     importScenarioJSON,
     exportScenarioJSON,
+    downloadScenarioJSON,
+    downloadPatientJSON,
+    patient,
     setBannerMessage,
     mode,
     isInstructorAuthenticated,
@@ -249,6 +252,20 @@ export const ScenarioAuthoringModal: React.FC = () => {
     navigator.clipboard.writeText(exported);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        setJsonText(text);
+        setJsonError(null);
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -786,40 +803,93 @@ export const ScenarioAuthoringModal: React.FC = () => {
           {activeTab === 'JSON' && (
             <div className="space-y-4">
               <div className="bg-white p-4 rounded-lg border border-slate-300 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-                      Export Active Scenario
+                    <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                      <Download className="h-4 w-4 text-teal-700" />
+                      Export &amp; Download Scenario / Patient Data
                     </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Copy JSON configuration to share with colleagues or save as backup.
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Download JSON configuration containing all active patient demographics, height, weight, renal labs, allergies, and prescriptions.
                     </p>
                   </div>
-                  <button
-                    onClick={handleCopyJSON}
-                    className="flex items-center gap-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 px-3 py-1.5 font-bold cursor-pointer transition-colors"
-                  >
-                    {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                    <span>{copied ? 'Copied!' : 'Copy JSON'}</span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={handleCopyJSON}
+                      className="flex items-center gap-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 px-3 py-1.5 font-bold cursor-pointer transition-colors"
+                      title="Copy JSON string to clipboard"
+                    >
+                      {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                      <span>{copied ? 'Copied!' : 'Copy JSON'}</span>
+                    </button>
+                    <button
+                      onClick={() => downloadPatientJSON()}
+                      className="flex items-center gap-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1.5 font-bold cursor-pointer transition-colors shadow-2xs"
+                      title="Download patient profile JSON only"
+                    >
+                      <User className="h-3.5 w-3.5 text-amber-700" />
+                      <span>Download Patient Only (.json)</span>
+                    </button>
+                    <button
+                      onClick={() => downloadScenarioJSON()}
+                      className="flex items-center gap-1.5 rounded bg-teal-700 hover:bg-teal-800 text-white font-bold px-3.5 py-1.5 cursor-pointer shadow-xs transition-colors"
+                      title="Download complete scenario JSON with patient details and prescriptions"
+                    >
+                      <Download className="h-3.5 w-3.5 text-amber-300" />
+                      <span>Download Full Scenario (.json)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Patient Inclusions Checklist */}
+                <div className="rounded-lg bg-teal-50/70 border border-teal-200 p-3 text-[11px] text-teal-950 space-y-1.5">
+                  <span className="font-bold flex items-center gap-1 text-teal-900 text-xs">
+                    <Check className="h-3.5 w-3.5 text-teal-700" />
+                    Verified: Downloading JSON includes all active patient data:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-700 pl-4 list-disc">
+                    <div>• <strong>Demographics:</strong> {patient.lastName}, {patient.firstName} ({patient.gender}, {patient.age}y, DOB: {patient.dob})</div>
+                    <div>• <strong>Address:</strong> {patient.address}</div>
+                    <div>• <strong>Identifiers:</strong> Hosp #{patient.hospitalNumber} | NHS #{patient.nationalNumber}</div>
+                    <div>• <strong>Ward &amp; Consultant:</strong> {patient.ward} • {patient.bayBed} ({patient.consultant})</div>
+                    <div>• <strong>Biometrics:</strong> Weight: {patient.weightKg}kg | Height: {patient.heightCm}cm | BSA: {patient.bodySurfaceArea}sqm</div>
+                    <div>• <strong>Renal Labs:</strong> eGFR {patient.eGFR} mL/min | Creatinine {patient.creatinine} µmol/L</div>
+                    <div>• <strong>Allergies:</strong> Status: {patient.allergyStatus} ({patient.allergies.length} recorded)</div>
+                    <div>• <strong>Clinical Status:</strong> {patient.resuscitationStatus} | Vitals &amp; NEWS2: {patient.vitals?.news2Score ?? 'N/A'}</div>
+                  </div>
                 </div>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-slate-300 shadow-xs space-y-3">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
-                    Import Custom Scenario JSON
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Paste a scenario JSON payload below to load it into the EPMA training simulator.
-                  </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                      <Upload className="h-4 w-4 text-teal-700" />
+                      Import Custom Scenario or Patient JSON
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Upload a downloaded JSON file or paste scenario/patient payload to load into EPMA.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-1 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 px-3 py-1.5 font-bold cursor-pointer transition-colors text-slate-700">
+                      <Upload className="h-3.5 w-3.5 text-teal-700" />
+                      <span>Upload JSON File</span>
+                      <input
+                        type="file"
+                        accept=".json,application/json"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <textarea
-                  rows={8}
+                  rows={6}
                   value={jsonText}
                   onChange={(e) => setJsonText(e.target.value)}
-                  placeholder="Paste Scenario JSON here..."
+                  placeholder="Paste Scenario or Patient JSON here or click 'Upload JSON File' above..."
                   className="w-full font-mono text-[11px] rounded border border-slate-300 p-2.5 focus:border-teal-600 focus:outline-none"
                 />
 
@@ -837,7 +907,7 @@ export const ScenarioAuthoringModal: React.FC = () => {
                     className="flex items-center gap-1.5 rounded bg-teal-700 hover:bg-teal-800 text-white font-bold px-4 py-2 cursor-pointer shadow-xs disabled:opacity-50"
                   >
                     <Upload className="h-3.5 w-3.5" />
-                    <span>Import & Run Scenario</span>
+                    <span>Import &amp; Apply JSON</span>
                   </button>
                 </div>
               </div>

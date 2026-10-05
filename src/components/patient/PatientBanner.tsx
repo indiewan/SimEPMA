@@ -10,11 +10,24 @@ import {
   ShieldAlert,
   Edit2,
   X,
-  Plus
+  Plus,
+  UserCog
 } from 'lucide-react';
 
-export const PatientBanner: React.FC = () => {
-  const { patient, updatePatient, bannerMessage, clearBanner } = useSimulation();
+interface PatientBannerProps {
+  onOpenNotes?: () => void;
+  onOpenObjectives?: () => void;
+}
+
+export const PatientBanner: React.FC<PatientBannerProps> = () => {
+  const {
+    patient,
+    updatePatient,
+    bannerMessage,
+    clearBanner,
+    mode,
+    openInstructorPatientModal
+  } = useSimulation();
   const [showAllergyModal, setShowAllergyModal] = useState(false);
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [newWeight, setNewWeight] = useState(patient.weightKg.toString());
@@ -67,23 +80,68 @@ export const PatientBanner: React.FC = () => {
 
   return (
     <div className="bg-white border-b border-slate-300 text-slate-900 font-sans shadow-sm">
+      {/* Faculty / Instructor Crafting Action Bar */}
+      {mode === 'instructor' && (
+        <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 text-white px-3 py-1.5 flex flex-wrap items-center justify-between text-xs shadow-inner border-b border-amber-900/30">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1 font-bold text-amber-200 uppercase tracking-wider text-[10px] bg-amber-950/60 px-2 py-0.5 rounded border border-amber-400/40">
+              <UserCog className="h-3.5 w-3.5 text-amber-300" />
+              Instructor Patient Crafting Active
+            </span>
+            <span className="text-amber-100 text-[11px] hidden sm:inline">
+              Customise patient names, address, weight, height, renal labs, ward &amp; allergies to craft training scenarios.
+            </span>
+          </div>
+          <button
+            id="btn-craft-patient-banner"
+            onClick={() => openInstructorPatientModal('demographics')}
+            className="flex items-center gap-1.5 rounded bg-white hover:bg-amber-50 text-amber-950 font-bold px-2.5 py-1 text-xs shadow-xs transition-all cursor-pointer"
+            title="Open Instructor Patient Studio to edit demographics, weight, renal function, etc."
+          >
+            <Edit2 className="h-3.5 w-3.5 text-amber-700" />
+            <span>Craft / Edit Patient Data</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Patient Master Index Row */}
       <div className="grid grid-cols-1 md:grid-cols-12 text-xs border-b border-slate-200 divide-y md:divide-y-0 md:divide-x divide-slate-200">
         {/* Name, Demographics & Address */}
         <div className="md:col-span-5 px-3 py-2">
           <div className="flex items-baseline justify-between gap-2">
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-base font-black tracking-wide text-slate-900 uppercase">
                 {patient.lastName}, {patient.firstName}
               </span>
               <span className="text-slate-500 font-medium">
                 Born <span className="font-semibold text-slate-800">{patient.dob}</span> ({patient.age} y)
               </span>
+              {mode === 'instructor' && (
+                <button
+                  onClick={() => openInstructorPatientModal('demographics')}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.2 rounded transition-colors cursor-pointer"
+                  title="Instructor: Edit patient name, DOB, age, gender, and address"
+                >
+                  <Edit2 className="h-2.5 w-2.5" />
+                  <span>Edit Demographics</span>
+                </button>
+              )}
             </div>
             <span className="font-semibold text-slate-700">Gender <strong className="text-slate-900">{patient.gender}</strong></span>
           </div>
-          <div className="mt-1 text-[11px] text-slate-600 truncate">
-            Address: <span className="font-mono text-slate-800">{patient.address}</span>
+          <div className="mt-1 text-[11px] text-slate-600 truncate flex items-center justify-between">
+            <span className="truncate">
+              Address: <span className="font-mono text-slate-800">{patient.address}</span>
+            </span>
+            {mode === 'instructor' && (
+              <button
+                onClick={() => openInstructorPatientModal('demographics')}
+                className="text-amber-700 hover:text-amber-900 text-[10px] font-semibold underline shrink-0 ml-1 cursor-pointer"
+                title="Instructor: Edit address"
+              >
+                Change Address
+              </button>
+            )}
           </div>
         </div>
 
@@ -91,11 +149,33 @@ export const PatientBanner: React.FC = () => {
         <div className="md:col-span-3 px-3 py-2 flex flex-col justify-center">
           <div className="flex justify-between items-center text-[11px]">
             <span className="text-slate-500">Hospital No.:</span>
-            <span className="font-mono font-bold text-slate-800">{patient.hospitalNumber}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-slate-800">{patient.hospitalNumber}</span>
+              {mode === 'instructor' && (
+                <button
+                  onClick={() => openInstructorPatientModal('demographics')}
+                  className="text-amber-700 hover:text-amber-900 p-0.5 cursor-pointer"
+                  title="Instructor: Edit hospital number"
+                >
+                  <Edit2 className="h-2.5 w-2.5" />
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex justify-between items-center text-[11px] mt-0.5">
             <span className="text-slate-500">National No.:</span>
-            <span className="font-mono text-slate-700">{patient.nationalNumber}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-slate-700">{patient.nationalNumber}</span>
+              {mode === 'instructor' && (
+                <button
+                  onClick={() => openInstructorPatientModal('demographics')}
+                  className="text-amber-700 hover:text-amber-900 p-0.5 cursor-pointer"
+                  title="Instructor: Edit NHS number"
+                >
+                  <Edit2 className="h-2.5 w-2.5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -105,7 +185,13 @@ export const PatientBanner: React.FC = () => {
             <span className="text-[11px] text-slate-600 block">Allergy Status:</span>
             <button
               id="btn-allergy-status"
-              onClick={() => setShowAllergyModal(true)}
+              onClick={() => {
+                if (mode === 'instructor') {
+                  openInstructorPatientModal('allergies');
+                } else {
+                  setShowAllergyModal(true);
+                }
+              }}
               className="mt-0.5 inline-flex items-center gap-1.5 rounded font-bold text-xs hover:underline cursor-pointer"
             >
               {patient.allergyStatus === 'RECORDED_ALLERGIES' ? (
@@ -126,29 +212,78 @@ export const PatientBanner: React.FC = () => {
               )}
             </button>
           </div>
-          <button
-            onClick={() => setShowAllergyModal(true)}
-            className="text-[11px] text-teal-700 hover:text-teal-900 font-medium underline cursor-pointer"
-          >
-            Details
-          </button>
+          <div className="flex items-center gap-2">
+            {mode === 'instructor' ? (
+              <button
+                onClick={() => openInstructorPatientModal('allergies')}
+                className="inline-flex items-center gap-1 text-[11px] text-amber-800 hover:text-amber-950 font-bold bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+                title="Instructor: Edit and craft allergies"
+              >
+                <Edit2 className="h-3 w-3" />
+                <span>Edit Allergies</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowAllergyModal(true)}
+                className="text-[11px] text-teal-700 hover:text-teal-900 font-medium underline cursor-pointer"
+              >
+                Details
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Second Row: Clinical Context (Consultant, Ward, Bed, Weight, Height, BSA) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 text-xs bg-slate-50/70 border-b border-slate-200 divide-x divide-slate-200 py-1.5 px-1">
-        <div className="px-2 py-0.5">
-          <span className="text-slate-500 text-[10px] uppercase block">Consultant</span>
-          <span className="font-semibold text-slate-900 truncate block">{patient.consultant}</span>
+        <div className="px-2 py-0.5 flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            <span className="text-slate-500 text-[10px] uppercase block">Consultant</span>
+            <span className="font-semibold text-slate-900 truncate block">{patient.consultant}</span>
+          </div>
+          {mode === 'instructor' && (
+            <button
+              onClick={() => openInstructorPatientModal('ward')}
+              className="text-amber-700 hover:text-amber-900 p-0.5 cursor-pointer shrink-0 ml-1"
+              title="Instructor: Edit consultant"
+            >
+              <Edit2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
-        <div className="px-2 py-0.5">
-          <span className="text-slate-500 text-[10px] uppercase block">Ward / Bed</span>
-          <span className="font-semibold text-slate-900">{patient.ward} • {patient.bayBed}</span>
+
+        <div className="px-2 py-0.5 flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            <span className="text-slate-500 text-[10px] uppercase block">Ward / Bed</span>
+            <span className="font-semibold text-slate-900">{patient.ward} • {patient.bayBed}</span>
+          </div>
+          {mode === 'instructor' && (
+            <button
+              onClick={() => openInstructorPatientModal('ward')}
+              className="text-amber-700 hover:text-amber-900 p-0.5 cursor-pointer shrink-0 ml-1"
+              title="Instructor: Edit ward and bed"
+            >
+              <Edit2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
-        <div className="px-2 py-0.5">
-          <span className="text-slate-500 text-[10px] uppercase block">Body Surface Area</span>
-          <span className="font-semibold text-slate-900">{patient.bodySurfaceArea} sqm (e)</span>
+
+        <div className="px-2 py-0.5 flex items-center justify-between">
+          <div>
+            <span className="text-slate-500 text-[10px] uppercase block">Body Surface Area</span>
+            <span className="font-semibold text-slate-900">{patient.bodySurfaceArea} sqm (e)</span>
+          </div>
+          {mode === 'instructor' && (
+            <button
+              onClick={() => openInstructorPatientModal('biometrics')}
+              className="text-amber-700 hover:text-amber-900 p-0.5 cursor-pointer"
+              title="Instructor: Edit BSA / biometrics"
+            >
+              <Edit2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
+
         <div className="px-2 py-0.5 flex items-center justify-between">
           <div>
             <span className="text-slate-500 text-[10px] uppercase block">Weight</span>
@@ -156,22 +291,52 @@ export const PatientBanner: React.FC = () => {
           </div>
           <button
             id="btn-edit-weight"
-            onClick={() => setShowWeightModal(true)}
-            className="text-teal-700 hover:text-teal-900 p-0.5 cursor-pointer"
-            title="Edit patient weight"
+            onClick={() => {
+              if (mode === 'instructor') {
+                openInstructorPatientModal('biometrics');
+              } else {
+                setShowWeightModal(true);
+              }
+            }}
+            className={mode === 'instructor' ? 'text-amber-700 hover:text-amber-900 p-0.5 cursor-pointer' : 'text-teal-700 hover:text-teal-900 p-0.5 cursor-pointer'}
+            title={mode === 'instructor' ? 'Instructor: Edit weight & outdated status' : 'Edit patient weight'}
           >
             <Edit2 className="h-3 w-3" />
           </button>
         </div>
-        <div className="px-2 py-0.5">
-          <span className="text-slate-500 text-[10px] uppercase block">Height</span>
-          <span className="font-semibold text-slate-900">{patient.heightCm} cm</span>
+
+        <div className="px-2 py-0.5 flex items-center justify-between">
+          <div>
+            <span className="text-slate-500 text-[10px] uppercase block">Height</span>
+            <span className="font-semibold text-slate-900">{patient.heightCm} cm</span>
+          </div>
+          {mode === 'instructor' && (
+            <button
+              onClick={() => openInstructorPatientModal('biometrics')}
+              className="text-amber-700 hover:text-amber-900 p-0.5 cursor-pointer"
+              title="Instructor: Edit height"
+            >
+              <Edit2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
-        <div className="px-2 py-0.5">
-          <span className="text-slate-500 text-[10px] uppercase block">Renal (eGFR / Cr)</span>
-          <span className={`font-semibold ${patient.eGFR < 30 ? 'text-red-700 font-bold' : 'text-slate-900'}`}>
-            {patient.eGFR} mL/min • {patient.creatinine} µmol/L
-          </span>
+
+        <div className="px-2 py-0.5 flex items-center justify-between">
+          <div>
+            <span className="text-slate-500 text-[10px] uppercase block">Renal (eGFR / Cr)</span>
+            <span className={`font-semibold ${patient.eGFR < 30 ? 'text-red-700 font-bold' : patient.eGFR < 60 ? 'text-amber-700 font-bold' : 'text-slate-900'}`}>
+              {patient.eGFR} mL/min • {patient.creatinine} µmol/L
+            </span>
+          </div>
+          {mode === 'instructor' && (
+            <button
+              onClick={() => openInstructorPatientModal('biometrics')}
+              className="text-amber-700 hover:text-amber-900 p-0.5 cursor-pointer"
+              title="Instructor: Edit renal function (eGFR / Creatinine)"
+            >
+              <Edit2 className="h-3 w-3" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -185,10 +350,16 @@ export const PatientBanner: React.FC = () => {
             </span>
           </div>
           <button
-            onClick={() => setShowWeightModal(true)}
+            onClick={() => {
+              if (mode === 'instructor') {
+                openInstructorPatientModal('biometrics');
+              } else {
+                setShowWeightModal(true);
+              }
+            }}
             className="rounded bg-amber-200 hover:bg-amber-300 text-amber-900 px-2 py-0.5 font-semibold text-[11px] border border-amber-300 cursor-pointer"
           >
-            Record Weight
+            {mode === 'instructor' ? 'Instructor: Edit Weight / Alert' : 'Record Weight'}
           </button>
         </div>
       )}
@@ -201,7 +372,20 @@ export const PatientBanner: React.FC = () => {
         >
           <span className="flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5 text-teal-600" />
-            Communication Zone & Clinical Handover Summary
+            Communication Zone &amp; Clinical Handover Summary
+            {mode === 'instructor' && (
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openInstructorPatientModal('vitals');
+                }}
+                className="ml-2 inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.2 rounded cursor-pointer"
+                title="Instructor: Edit clinical handover summary & vitals"
+              >
+                <Edit2 className="h-2.5 w-2.5" />
+                <span>Edit Handover &amp; Vitals</span>
+              </span>
+            )}
           </span>
           {showCommZone ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </button>

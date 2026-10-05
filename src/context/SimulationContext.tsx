@@ -106,6 +106,8 @@ interface SimulationContextType {
   editCustomScenario: (updatedScenario: Scenario) => void;
   importScenarioJSON: (jsonString: string) => { success: boolean; message: string };
   exportScenarioJSON: () => string;
+  downloadScenarioJSON: (filename?: string) => void;
+  downloadPatientJSON: (filename?: string) => void;
   resetScenario: () => void;
   triggerClinicalEvent: (eventId: string) => void;
   showHelpGuide: boolean;
@@ -113,6 +115,13 @@ interface SimulationContextType {
   helpGuideSection: 'HELP' | 'OVERVIEW' | 'PRESCRIBING' | 'ADMINISTRATION' | 'CODES' | 'PHARMACY';
   setHelpGuideSection: (section: 'HELP' | 'OVERVIEW' | 'PRESCRIBING' | 'ADMINISTRATION' | 'CODES' | 'PHARMACY') => void;
   openHelpGuide: (section?: 'HELP' | 'OVERVIEW' | 'PRESCRIBING' | 'ADMINISTRATION' | 'CODES' | 'PHARMACY') => void;
+
+  // Instructor Patient Crafting
+  showInstructorPatientModal: boolean;
+  setShowInstructorPatientModal: (show: boolean) => void;
+  openInstructorPatientModal: (tab?: 'demographics' | 'ward' | 'biometrics' | 'allergies' | 'vitals') => void;
+  instructorPatientModalTab: 'demographics' | 'ward' | 'biometrics' | 'allergies' | 'vitals';
+  setInstructorPatientModalTab: (tab: 'demographics' | 'ward' | 'biometrics' | 'allergies' | 'vitals') => void;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
@@ -146,6 +155,13 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
   const [bannerMessage, setBannerMessage] = useState<{ type: 'success' | 'warning' | 'info' | 'error'; text: string } | null>(null);
   const [showHelpGuide, setShowHelpGuide] = useState<boolean>(false);
   const [helpGuideSection, setHelpGuideSection] = useState<'HELP' | 'OVERVIEW' | 'PRESCRIBING' | 'ADMINISTRATION' | 'CODES' | 'PHARMACY'>('OVERVIEW');
+  const [showInstructorPatientModal, setShowInstructorPatientModal] = useState<boolean>(false);
+  const [instructorPatientModalTab, setInstructorPatientModalTab] = useState<'demographics' | 'ward' | 'biometrics' | 'allergies' | 'vitals'>('demographics');
+
+  const openInstructorPatientModal = (tab: 'demographics' | 'ward' | 'biometrics' | 'allergies' | 'vitals' = 'demographics') => {
+    setInstructorPatientModalTab(tab);
+    setShowInstructorPatientModal(true);
+  };
 
   const openHelpGuide = (section: 'HELP' | 'OVERVIEW' | 'PRESCRIBING' | 'ADMINISTRATION' | 'CODES' | 'PHARMACY' = 'OVERVIEW') => {
     setHelpGuideSection(section);
@@ -248,7 +264,13 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
   const clearBanner = () => setBannerMessage(null);
 
   const updatePatient = (updated: Partial<Patient>) => {
-    setPatient(prev => ({ ...prev, ...updated }));
+    setPatient(prev => {
+      const next = { ...prev, ...updated };
+      setScenarios(prevScenarios =>
+        prevScenarios.map(s => (s.id === currentScenarioId ? { ...s, patient: next } : s))
+      );
+      return next;
+    });
   };
 
   const selectScenario = (id: string) => {
@@ -657,26 +679,75 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
   const importScenarioJSON = (jsonString: string) => {
     try {
       const parsed = JSON.parse(jsonString);
-      if (!parsed.title || !parsed.patient) {
-        return { success: false, message: 'Invalid scenario format: missing title or patient data.' };
+      if (parsed.title && parsed.patient) {
+        const imported: Scenario = {
+          ...parsed,
+          id: parsed.id || 'scenario-import-' + Date.now(),
+          initialPrescriptions: parsed.initialPrescriptions || [],
+          objectives: parsed.objectives || [],
+          clinicalEvents: parsed.clinicalEvents || []
+        };
+        setScenarios(prev => [imported, ...prev]);
+        setCurrentScenarioId(imported.id);
+        setPatient(imported.patient);
+        setPrescriptions(JSON.parse(JSON.stringify(imported.initialPrescriptions)));
+        return { success: true, message: `Imported scenario "${imported.title}" with patient ${imported.patient.lastName}, ${imported.patient.firstName}.` };
+      } else if (parsed.firstName || parsed.lastName || parsed.hospitalNumber) {
+        updatePatient(parsed);
+        return { success: true, message: `Loaded patient profile for ${parsed.lastName || 'Patient'}, ${parsed.firstName || ''} successfully.` };
+      } else {
+        return { success: false, message: 'Invalid format: Expected a Scenario JSON or Patient profile JSON.' };
       }
-      const imported: Scenario = {
-        ...parsed,
-        id: parsed.id || 'scenario-import-' + Date.now(),
-        initialPrescriptions: parsed.initialPrescriptions || [],
-        objectives: parsed.objectives || [],
-        clinicalEvents: parsed.clinicalEvents || []
-      };
-      setScenarios(prev => [imported, ...prev]);
-      setCurrentScenarioId(imported.id);
-      return { success: true, message: `Imported "${imported.title}" successfully.` };
     } catch (e: any) {
       return { success: false, message: 'JSON Parse Error: ' + e.message };
     }
   };
 
   const exportScenarioJSON = () => {
-    return JSON.stringify(currentScenario, null, 2);
+    const fullScenarioData: Scenario = {
+      ...currentScenario,
+      patient: { ...patient },
+      initialPrescriptions: JSON.parse(JSON.stringify(prescriptions))
+    };
+    return JSON.stringify(fullScenarioData, null, 2);
+  };
+
+  const downloadScenarioJSON = (filename?: string) => {
+    const jsonStr = exportScenarioJSON();
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const safeName = (patient.lastName || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const actualName = filename || `scenario-${safeName}-${patient.hospitalNumber || 'case'}.json`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = actualName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setBannerMessage({
+      type: 'success',
+      text: `Downloaded scenario with patient details to "${actualName}".`
+    });
+  };
+
+  const downloadPatientJSON = (filename?: string) => {
+    const jsonStr = JSON.stringify(patient, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const safeName = (patient.lastName || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const actualName = filename || `patient-${safeName}-${patient.hospitalNumber || 'profile'}.json`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = actualName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setBannerMessage({
+      type: 'success',
+      text: `Downloaded patient profile to "${actualName}".`
+    });
   };
 
   const triggerClinicalEvent = (eventId: string) => {
@@ -815,13 +886,20 @@ export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children
         editCustomScenario,
         importScenarioJSON,
         exportScenarioJSON,
+        downloadScenarioJSON,
+        downloadPatientJSON,
         resetScenario,
         triggerClinicalEvent,
         showHelpGuide,
         setShowHelpGuide,
         helpGuideSection,
         setHelpGuideSection,
-        openHelpGuide
+        openHelpGuide,
+        showInstructorPatientModal,
+        setShowInstructorPatientModal,
+        openInstructorPatientModal,
+        instructorPatientModalTab,
+        setInstructorPatientModalTab
       }}
     >
       {children}

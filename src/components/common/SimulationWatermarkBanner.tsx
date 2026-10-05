@@ -16,7 +16,8 @@ import {
   Pill,
   Lock,
   Unlock,
-  KeyRound
+  KeyRound,
+  UserCog
 } from 'lucide-react';
 
 export const SimulationWatermarkBanner: React.FC = () => {
@@ -42,7 +43,8 @@ export const SimulationWatermarkBanner: React.FC = () => {
     objectivesCompletedCount,
     totalObjectivesCount,
     setShowHelpGuide,
-    openHelpGuide
+    openHelpGuide,
+    openInstructorPatientModal
   } = useSimulation();
 
   return (
@@ -169,6 +171,18 @@ export const SimulationWatermarkBanner: React.FC = () => {
               <Sparkles className="h-3 w-3 text-amber-300" />
               <span>Author & Cases</span>
             </button>
+
+            {mode === 'instructor' && (
+              <button
+                id="btn-craft-patient-watermark"
+                onClick={() => openInstructorPatientModal('demographics')}
+                title="Craft patient demographics, height, weight, renal labs, etc."
+                className="flex items-center gap-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-bold px-2 py-1 text-xs shadow-xs transition-colors cursor-pointer"
+              >
+                <UserCog className="h-3.5 w-3.5 text-amber-200" />
+                <span>Craft Patient</span>
+              </button>
+            )}
 
             <button
               id="btn-reset-scenario"

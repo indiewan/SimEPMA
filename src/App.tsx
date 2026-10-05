@@ -22,6 +22,7 @@ import { CaseObjectivesModal } from './components/modals/CaseObjectivesModal';
 import { AdministrationRoundModal } from './components/modals/AdministrationRoundModal';
 import { EpmaSystemGuideModal } from './components/education/EpmaSystemGuideModal';
 import { ScenarioAuthoringModal } from './components/modals/ScenarioAuthoringModal';
+import { InstructorPatientModal } from './components/modals/InstructorPatientModal';
 
 import { Prescription } from './types/epma';
 
@@ -33,7 +34,10 @@ const EpmaSimulationApp: React.FC = () => {
     simulatedDate,
     simulatedTime,
     showHelpGuide,
-    setShowHelpGuide
+    setShowHelpGuide,
+    showInstructorPatientModal,
+    setShowInstructorPatientModal,
+    instructorPatientModalTab
   } = useSimulation();
 
   // Modal states
@@ -130,6 +134,13 @@ const EpmaSimulationApp: React.FC = () => {
 
       {/* Scenario Authoring & Case Selector Modal */}
       <ScenarioAuthoringModal />
+
+      {/* Instructor Patient Crafting Modal */}
+      <InstructorPatientModal
+        isOpen={showInstructorPatientModal}
+        onClose={() => setShowInstructorPatientModal(false)}
+        initialTab={instructorPatientModalTab}
+      />
 
       {/* Chart Dose Modal (Screenshots 3 & 4 replication) */}
       {chartingTarget && (

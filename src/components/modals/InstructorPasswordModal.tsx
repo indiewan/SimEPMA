@@ -90,6 +90,9 @@ export const InstructorPasswordModal: React.FC = () => {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            <span className="text-[11px] text-slate-500 block mt-1">
+              Faculty evaluation passcode: <strong className="font-mono text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200">Admin</strong>
+            </span>
           </div>
 
           {error && (
